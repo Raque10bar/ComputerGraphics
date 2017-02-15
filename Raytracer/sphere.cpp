@@ -60,9 +60,7 @@ Hit Sphere::intersect(const Ray &ray)
     ****************************************************/
 
     Point intersection = ray.at(t);
-    Vector dir = intersection - position;
+    Vector N = (intersection - position).normalized();
     
-    //Why r squared? O.O
-    Vector N = (intersection + dir*r*r).normalized();
     return Hit(t,N);
 }
