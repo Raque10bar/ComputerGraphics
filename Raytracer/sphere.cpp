@@ -44,20 +44,11 @@ Hit Sphere::intersect(const Ray &ray)
     double c = (ray.O - position).dot(ray.O - position) - r*r;
     
     double d = b*b - 4*c;
-    double dist = -1;
+    double t = (-b - sqrt(d))/2;
     
-    if (d == 0) {
-        dist = -b/2;
-    } else if (d > 0) {
-        dist = (-b - sqrt(d))/2;
-    }
-    
-    if (dist < 0) {
+    if (t < 0) {
         return Hit::NO_HIT();
     }
-    
-    double t = dist;
-
     
     /****************************************************
     * RT1.2: NORMAL CALCULATION
@@ -73,6 +64,5 @@ Hit Sphere::intersect(const Ray &ray)
     
     //Why r squared? O.O
     Vector N = (intersection + dir*r*r).normalized();
-
     return Hit(t,N);
 }
