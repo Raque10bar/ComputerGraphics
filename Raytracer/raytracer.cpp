@@ -22,6 +22,8 @@
 #include <ctype.h>
 #include <fstream>
 #include <assert.h>
+#include "renderMode.h"
+#include <string.h>
 
 // Functions to ease reading from YAML input
 void operator >> (const YAML::Node& node, Triple& t);
@@ -42,6 +44,28 @@ Triple parseTriple(const YAML::Node& node)
     node[1] >> t.y;
     node[2] >> t.z;	
     return t;
+}
+
+RenderMode Raytracer::parseRenderMode(const YAML::Node& node)
+{
+    RenderMode resultMode = PHONG;
+    
+    try
+    {
+        std::string mode;
+        node["RenderMode"] >> mode;
+        
+        if (mode == "normal") {
+            resultMode = NORMAL;
+        } else if (mode == "zbuffer") {
+            resultMode = ZBUFFER;
+        }
+    }
+    catch (...)
+    {
+    }
+    
+    return resultMode;
 }
 
 Material* Raytracer::parseMaterial(const YAML::Node& node)
@@ -136,6 +160,9 @@ bool Raytracer::readScene(const std::string& inputFilename)
             for(YAML::Iterator it=sceneLights.begin();it!=sceneLights.end();++it) {
                 scene->addLight(parseLight(*it));
             }
+            
+            //Read and parse the render mode
+            scene->setRenderMode(parseRenderMode(doc));
         }
         if (parser) {
             cerr << "Warning: unexpected YAML document, ignored." << endl;

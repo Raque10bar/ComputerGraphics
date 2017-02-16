@@ -22,19 +22,26 @@
 #include "light.h"
 #include "object.h"
 #include "image.h"
+#include "renderMode.h"
 
 class Scene
 {
 private:
+    RenderMode renderMode;
+    
     std::vector<Object*> objects;
     std::vector<Light*> lights;
     Triple eye;
+    
+    Color tracePhong(Material *material, Point hit, Vector N, Vector V);
+    Color traceNormalBuffer(Vector N);
 public:
     Color trace(const Ray &ray);
     void render(Image &img);
     void addObject(Object *o);
     void addLight(Light *l);
     void setEye(Triple e);
+    void setRenderMode(RenderMode rm);
     unsigned int getNumObjects() { return objects.size(); }
     unsigned int getNumLights() { return lights.size(); }
 };

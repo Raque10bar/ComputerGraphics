@@ -16,6 +16,7 @@
 
 #include "scene.h"
 #include "material.h"
+#include "renderMode.h"
 
 Color Scene::trace(const Ray &ray)
 {
@@ -37,28 +38,42 @@ Color Scene::trace(const Ray &ray)
     Point hit = ray.at(min_hit.t);                 //the hit point
     Vector N = min_hit.N;                          //the normal at hit point
     Vector V = -ray.D;                             //the view vector
-
-
-    /****************************************************
-    * This is where you should insert the color
-    * calculation (Phong model).
-    *
-    * Given: material, hit, N, V, lights[]
-    * Sought: color
-    *
-    * Hints: (see triple.h)
-    *        Triple.dot(Vector) dot product
-    *        Vector+Vector      vector sum
-    *        Vector-Vector      vector difference
-    *        Point-Point        yields vector
-    *        Vector.normalize() normalizes vector, returns length
-    *        double*Color        scales each color component (r,g,b)
-    *        Color*Color        dito
-    *        pow(a,b)           a to the power of b
-    ****************************************************/
-
-    Color resultColor; // place holder
     
+    Color resultColor;
+    switch (renderMode) {
+        case PHONG:
+            resultColor = tracePhong(material, hit, N, V);
+            break;
+        case ZBUFFER:
+            //TODO Put here the zbuffer method
+            break;
+        case NORMAL:
+            resultColor = traceNormalBuffer(N);
+        default:
+            break;
+    }
+    return resultColor;
+}
+
+Color Scene::tracePhong(Material *material, Point hit, Vector N, Vector V) {
+    /****************************************************
+     * This is where you should insert the color
+     * calculation (Phong model).
+     *
+     * Given: material, hit, N, V, lights[]
+     * Sought: color
+     *
+     * Hints: (see triple.h)
+     *        Triple.dot(Vector) dot product
+     *        Vector+Vector      vector sum
+     *        Vector-Vector      vector difference
+     *        Point-Point        yields vector
+     *        Vector.normalize() normalizes vector, returns length
+     *        double*Color        scales each color component (r,g,b)
+     *        Color*Color        dito
+     *        pow(a,b)           a to the power of b
+     ****************************************************/
+    Color resultColor; // place holder
     Color ambient;
     Color diffuse;
     Color specular;
@@ -70,28 +85,35 @@ Color Scene::trace(const Ray &ray)
     Vector R;
     
     for (int i = 0; i < lights.size(); i++) {
-        
+    
         L = (lights[i]->position - hit).normalized();
         NdotL = N.dot(L);
-        
+    
         if (NdotL < 0) {
             NdotL = 0;
         }
-        
+    
         R = 2 * NdotL * N - L;
         RdotV = R.dot(V);
-        
+    
         if (RdotV < 0) {
             RdotV = 0;
         }
-        
+    
         diffuse += NdotL * lights[i]->color * material->color * material->kd;
         specular += pow(RdotV, material->n) * lights[i]->color * material->ks;
     }
-    
+        
     ambient = material->color * material->ka;
-    
+        
     resultColor = ambient + diffuse + specular;
+    return resultColor;
+}
+
+Color Scene::traceNormalBuffer(Vector N)
+{
+    Vector Nmap = N / 2 + (1/2.0);
+    Color resultColor = Color(Nmap);
     return resultColor;
 }
 
@@ -123,4 +145,9 @@ void Scene::addLight(Light *l)
 void Scene::setEye(Triple e)
 {
     eye = e;
+}
+
+void Scene::setRenderMode(RenderMode rm)
+{
+    renderMode = rm;
 }

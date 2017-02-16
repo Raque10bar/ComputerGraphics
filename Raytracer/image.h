@@ -45,7 +45,7 @@ public:
     {
         if (_pixel) delete[] _pixel;
     }
-
+    
     // Normal accessors
     inline void put_pixel(int x, int y, Color c);
     inline Color get_pixel(int x, int y) const;

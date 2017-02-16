@@ -21,6 +21,7 @@
 #include "light.h"
 #include "scene.h"
 #include "yaml/yaml.h"
+#include "renderMode.h"
 
 class Raytracer {
 private:
@@ -30,6 +31,7 @@ private:
     Material* parseMaterial(const YAML::Node& node);
     Object* parseObject(const YAML::Node& node);
     Light* parseLight(const YAML::Node& node);
+    RenderMode parseRenderMode(const YAML::Node& node);
 
 public:
     Raytracer() { }
