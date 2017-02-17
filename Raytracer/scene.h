@@ -35,11 +35,15 @@ private:
     
     Color tracePhong(Material *material, Point hit, Vector N, Vector V);
     Color traceNormalBuffer(Vector N);
+    Color traceZBuffer(Hit N);
+    double minDist;
+    double maxDist;
 public:
     Color trace(const Ray &ray);
     void render(Image &img);
     void addObject(Object *o);
     void addLight(Light *l);
+    void setMinMax(int w, int h);
     void setEye(Triple e);
     void setRenderMode(RenderMode rm);
     unsigned int getNumObjects() { return objects.size(); }

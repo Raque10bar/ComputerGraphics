@@ -45,7 +45,7 @@ Color Scene::trace(const Ray &ray)
             resultColor = tracePhong(material, hit, N, V);
             break;
         case ZBUFFER:
-            //TODO Put here the zbuffer method
+            resultColor = traceZBuffer(min_hit);
             break;
         case NORMAL:
             resultColor = traceNormalBuffer(N);
@@ -117,10 +117,20 @@ Color Scene::traceNormalBuffer(Vector N)
     return resultColor;
 }
 
+Color Scene::traceZBuffer(Hit min_hit)
+{
+    
+    //With the Min and Max obtained, we could come out with a fraction to scale the rgb
+    double value = (min_hit.t-minDist)/(maxDist-minDist);
+    Color resultColor = Color(1-value,1-value,1-value);
+    return resultColor;
+}
+
 void Scene::render(Image &img)
 {
     int w = img.width();
     int h = img.height();
+    setMinMax(w, h);
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
             Point pixel(x+0.5, h-1-y+0.5, 0);
@@ -128,6 +138,35 @@ void Scene::render(Image &img)
             Color col = trace(ray);
             col.clamp();
             img(x,y) = col;
+        }
+    }
+}
+
+void Scene::setMinMax(int w, int h){
+    
+    //Run through every pixel to get the correct Min and Max
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            Point pixel(x+0.5, h-1-y+0.5, 0);
+            Ray ray(eye, (pixel-eye).normalized());
+            Hit min_hit(std::numeric_limits<double>::infinity(),Vector());
+            Object *obj = NULL;
+            for (unsigned int i = 0; i < objects.size(); ++i) {
+                Hit hit(objects[i]->intersect(ray));
+                if (hit.t<min_hit.t) {
+                    min_hit = hit;
+                    obj = objects[i];
+                }
+            }
+            if(minDist==0){
+                minDist = min_hit.t;
+            }
+            if(min_hit.t <minDist && min_hit.t!=0){
+                minDist = min_hit.t;
+            }
+            if(min_hit.t>maxDist && min_hit.t!=std::numeric_limits<double>::infinity()){
+                maxDist = min_hit.t;
+            }
         }
     }
 }
