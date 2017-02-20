@@ -44,6 +44,10 @@ Hit Sphere::intersect(const Ray &ray)
     double c = (ray.O - position).dot(ray.O - position) - r*r;
     
     double d = b*b - 4*c;
+    if (d < 0) {
+        return Hit::NO_HIT();
+    }
+    
     double t = (-b - sqrt(d))/2;
     
     if (t < 0) {

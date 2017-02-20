@@ -24,10 +24,11 @@ class Plane : public Object
 public:
     
     Plane(Point point, Vector N) : point(point), N(N) {
-        std::cout << "\naaaa\n";
     }
     
-    Plane(Point p1, Point p2, Point p3) : point(p1), N((p2 - p1).cross(p3 - p1)) {}
+    Plane(Point p1, Point p2, Point p3) : point(p1), N((p2 - p1).cross(p3 - p1)) {
+        cout << N;
+    }
     
     virtual Hit intersect(const Ray &ray);
     

@@ -22,13 +22,15 @@
 class Cylinder : public Object
 {
 public:
-    Cylinder(Point position1, Point position2, double r) : position1(position1), position2(position2), r(r) { }
+    Cylinder(Point p1, Point p2, double r) : p1(p1), p2(p2), r(r) { }
 
     virtual Hit intersect(const Ray &ray);
 
-    const Point position1;
-    const Point position2;
+    const Point p1;
+    Point p2;
     const double r;
+private:
+    bool isInsideBody(Point p1, Point p2, Point intersect, Vector H);
 };
 
 #endif /* end of include guard: SPHERE_H_115209AE */

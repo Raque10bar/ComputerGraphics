@@ -1,12 +1,12 @@
-#ifndef BOX_H_INCLUDED
-#define BOX_H_INCLUDED
+#ifndef TRIANGLE_H_INCLUDED
+#define TRIANGLE_H_INCLUDED
 
 #include "object.h"
 
-class Box : public Object
+class Triangle : public Object
 {
 public:
-    Box(Point a, Point b,Point c) : a(a), b(b), c(c) { }
+    Triangle(Point a, Point b,Point c) : a(a), b(b), c(c) { }
 
     virtual Hit intersect(const Ray &ray);
 
@@ -17,4 +17,4 @@ public:
 private:
     bool checkInside(Point v1, Point v2, Point intersect, Vector N);
 };
-#endif // BOX_H
+#endif // TRIANGLE_H
