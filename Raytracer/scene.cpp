@@ -130,7 +130,9 @@ void Scene::render(Image &img)
 {
     int w = img.width();
     int h = img.height();
-    setMinMax(w, h);
+    if(renderMode==ZBUFFER){
+        setMinMax(w, h);
+    }
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
             Point pixel(x+0.5, h-1-y+0.5, 0);

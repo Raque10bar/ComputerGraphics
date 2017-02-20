@@ -20,31 +20,31 @@
 
 /************************** Sphere **********************************/
 
-Hit Sphere::intersect(const Ray &ray)
+Hit Cylinder::intersect(const Ray &ray)
 {
     // place holder for actual intersection calculation
 
-    double b = 2 * (ray.O - position).dot(ray.D);
-    double c = (ray.O - position).dot(ray.O - position) - r*r;
-    
-    double d = b*b - 4*c;
-    double t = (-b - sqrt(d))/2;
-    
-    if (t < 0) {
-        return Hit::NO_HIT();
-    }
-    
-    /****************************************************
-    * RT1.2: NORMAL CALCULATION
-    *
-    * Given: t, C, r
-    * Sought: N
-    * 
-    * Insert calculation of the sphere's normal at the intersection point.
-    ****************************************************/
-
-    Point intersection = ray.at(t);
-    Vector N = (intersection - position).normalized();
-    
-    return Hit(t,N);
+//    double b = 2 * (ray.O - position).dot(ray.D);
+//    double c = (ray.O - position).dot(ray.O - position) - r*r;
+//    
+//    double d = b*b - 4*c;
+//    double t = (-b - sqrt(d))/2;
+//    
+//    if (t < 0) {
+//        return Hit::NO_HIT();
+//    }
+//    
+//    /****************************************************
+//    * RT1.2: NORMAL CALCULATION
+//    *
+//    * Given: t, C, r
+//    * Sought: N
+//    * 
+//    * Insert calculation of the sphere's normal at the intersection point.
+//    ****************************************************/
+//
+//    Point intersection = ray.at(t);
+//    Vector N = (intersection - position).normalized();
+//    
+//    return Hit(t,N);
 }

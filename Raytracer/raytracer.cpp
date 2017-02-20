@@ -16,6 +16,7 @@
 #include "object.h"
 #include "sphere.h"
 #include "plane.h"
+#include "box.h"
 #include "material.h"
 #include "light.h"
 #include "image.h"
@@ -115,7 +116,20 @@ Object* Raytracer::parseObject(const YAML::Node& node)
  
         }
         returnObject = plane;
+        
+    } else if(objectType == "box") {
+        Point a;
+        Point b;
+        Point c;
+        
+        node["a"] >> a;
+        node["b"] >> b;
+        node["c"] >> c;
+        Box *box = new Box(a,b,c);
+        returnObject = box;
+        
     }
+
 
     if (returnObject) {
         // read the material and attach to object
