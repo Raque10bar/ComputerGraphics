@@ -36,6 +36,7 @@ private:
     Color tracePhong(Material *material, Point hit, Vector N, Vector V);
     Color traceNormalBuffer(Vector N);
     Color traceZBuffer(Hit N);
+    
     double minDist;
     double maxDist;
 public:

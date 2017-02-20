@@ -88,24 +88,15 @@ Color Scene::tracePhong(Material *material, Point hit, Vector N, Vector V) {
     
         L = (lights[i]->position - hit).normalized();
         NdotL = N.dot(L);
-    
-        if (NdotL < 0) {
-            NdotL = 0;
-        }
-    
-        R = 2 * NdotL * N - L;
+        
+        R = (2 * NdotL * N - L).normalized();
         RdotV = R.dot(V);
     
-        if (RdotV < 0) {
-            RdotV = 0;
-        }
-    
-        diffuse += NdotL * lights[i]->color * material->color * material->kd;
-        specular += pow(RdotV, material->n) * lights[i]->color * material->ks;
+        diffuse += max(0.0, NdotL) * lights[i]->color * material->color * material->kd;
+        specular += pow(max(0.0, RdotV), material->n) * lights[i]->color * material->ks;
     }
-        
+    
     ambient = material->color * material->ka;
-        
     resultColor = ambient + diffuse + specular;
     return resultColor;
 }

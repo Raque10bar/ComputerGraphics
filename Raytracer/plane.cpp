@@ -25,7 +25,7 @@ Hit Plane::intersect(const Ray &ray)
     // place holder for actual intersection calculation
 
     double LdotN = ray.D.dot(N);
-    if (LdotN == 0) {
+    if (LdotN <= 0) {
         return Hit::NO_HIT();
     }
     
