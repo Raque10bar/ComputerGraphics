@@ -13,5 +13,8 @@ public:
     const Point a;
     const Point b;
     const Point c;
+
+private:
+    bool checkInside(Point v1, Point v2, Point intersect, Vector N);
 };
 #endif // BOX_H
