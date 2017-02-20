@@ -31,6 +31,8 @@ public:
     const double r;
 private:
     bool isInsideBody(Point p1, Point p2, Point intersect, Vector H);
+    bool isInsideCap(Point c, Point intersect, double r);
+
 };
 
 #endif /* end of include guard: SPHERE_H_115209AE */

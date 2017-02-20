@@ -64,42 +64,31 @@ Hit Cylinder::intersect(const Ray &ray)
     }
     
     Vector Nc1 = (p1 - p2).normalized();
-    double LdotN = ray.D.dot(N);
+    double LdotN = ray.D.dot(Nc1);
     if (LdotN > 0) {
+        double tc1 = ((p1 - ray.O).dot(Nc1)) / LdotN;
+        if (tc1 >= 0 && tc1 < t && isInsideCap(p1, ray.at(tc1), r)) {
+            t = tc1;
+        }
     }
     
-    double tc1 = ((point - ray.O).dot(N)) / LdotN;
+    Vector Nc2 = (p2 - p1).normalized();
+    LdotN = ray.D.dot(Nc2);
+    if (LdotN > 0) {
+        double tc2 = ((p2 - ray.O).dot(Nc2)) / LdotN;
+        if (tc2 >= 0 && tc2 < t && isInsideCap(p2, ray.at(tc2), r)) {
+            t = tc2;
+        }
+    }
+    
+    
     if (t < 0) {
         return Hit::NO_HIT();
     }
-    
-    if (t < 0) {
-        return Hit::NO_HIT();
-    }
-    
-    
-//
-//    if (t < 0) {
-//        return Hit::NO_HIT();
-//    }
-//    
-//    /****************************************************
-//    * RT1.2: NORMAL CALCULATION
-//    *
-//    * Given: t, C, r
-//    * Sought: N
-//    * 
-//    * Insert calculation of the sphere's normal at the intersection point.
-//    ****************************************************/
-//
-//    Point intersection = ray.at(t);
-//    Vector N = (intersection - position).normalized();
-//
     
     Vector H = p2 - p1;
     V = intersect - p1;
-    Vector N = V - (V.dot(H) * V) / V.dot(V);
-    //Vector N = (intersect - t).normalized();
+    Vector N = V - (V.dot(H) * H) / H.dot(H);
     return Hit(t,N.normalized());
 }
 
@@ -108,6 +97,6 @@ bool Cylinder::isInsideBody(Point p1, Point p2, Point intersect, Vector H) {
     return H.dot(intersect - p1) > 0 && H.dot(intersect - p2) < 0;
 }
 
-//bool Cylinder::isInsideCap(Point c, Point intersect, Double r) {
-//    return (intersect - c).dot(intersect - c) < r*r;
-//}
+bool Cylinder::isInsideCap(Point c, Point intersect, double r) {
+    return (intersect - c).dot(intersect - c) < r*r;
+}
