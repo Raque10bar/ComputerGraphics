@@ -1,18 +1,4 @@
-//
-//  Framework for a raytracer
-//  File: sphere.h
-//
-//  Created for the Computer Science course "Introduction Computer Graphics"
-//  taught at the University of Groningen by Tobias Isenberg.
-//
-//  Authors:
-//    Maarten Everts
-//    Jasper van de Gronde
-//
-//  This framework is inspired by and uses code of the raytracer framework of 
-//  Bert Freudenberg that can be found at
-//  http://isgwww.cs.uni-magdeburg.de/graphik/lehre/cg2/projekt/rtprojekt.html 
-//
+//Class that models a cylinder (centered in any axis) from the center of the bottom cap p1, the center of the top cap p2 and its radius r.
 
 #ifndef CYLINDER_H_INCLUDE
 #define CYLINDER_H_INCLUDE
@@ -27,12 +13,13 @@ public:
     virtual Hit intersect(const Ray &ray);
 
     const Point p1;
-    Point p2;
+    const Point p2;
     const double r;
 private:
-    bool isInsideBody(Point p1, Point p2, Point intersect, Vector H);
+    double capHit(Point c, Vector N, Ray ray, double r);
+    bool isInsideBody(Point p1, Point p2, Point intersect);
     bool isInsideCap(Point c, Point intersect, double r);
 
 };
 
-#endif /* end of include guard: SPHERE_H_115209AE */
+#endif /* end of include guard: CYLINDER_H_INCLUDE */

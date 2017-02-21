@@ -39,6 +39,7 @@ Color Scene::trace(const Ray &ray)
     Vector N = min_hit.N;                          //the normal at hit point
     Vector V = -ray.D;                             //the view vector
     
+    //Trace the image according to the specified render mode
     Color resultColor;
     switch (renderMode) {
         case PHONG:
@@ -84,7 +85,8 @@ Color Scene::tracePhong(Material *material, Point hit, Vector N, Vector V) {
     Vector L;
     Vector R;
     
-    for (int i = 0; i < lights.size(); i++) {
+    //Add each light effect in the diffuse and specular colors
+    for (unsigned int i = 0; i < lights.size(); i++) {
     
         L = (lights[i]->position - hit).normalized();
         NdotL = N.dot(L);
@@ -92,25 +94,26 @@ Color Scene::tracePhong(Material *material, Point hit, Vector N, Vector V) {
         R = (2 * NdotL * N - L).normalized();
         RdotV = R.dot(V);
     
-        diffuse += max(0.0, NdotL) * lights[i]->color * material->color * material->kd;
-        specular += pow(max(0.0, RdotV), material->n) * lights[i]->color * material->ks;
+        diffuse += max(0.0, NdotL) * lights[i]->color;
+        specular += pow(max(0.0, RdotV), material->n) * lights[i]->color;
     }
     
+    //Compute the total color
     ambient = material->color * material->ka;
+    diffuse = diffuse * material->kd * material->color;
+    specular = specular * material->ks;
+    
     resultColor = ambient + diffuse + specular;
     return resultColor;
 }
 
 Color Scene::traceNormalBuffer(Vector N)
 {
-    Vector Nmap = N / 2 + (1/2.0);
-    Color resultColor = Color(Nmap);
-    return resultColor;
+    return Color(N / 2 + 0.5);
 }
 
 Color Scene::traceZBuffer(Hit min_hit)
 {
-    
     //With the Min and Max obtained, we could come out with a fraction to scale the rgb
     double value = (min_hit.t-minDist)/(maxDist-minDist);
     Color resultColor = Color(1-value,1-value,1-value);
@@ -121,9 +124,12 @@ void Scene::render(Image &img)
 {
     int w = img.width();
     int h = img.height();
-    if(renderMode==ZBUFFER){
+    
+    //If the render mode is zbuffer, we compute the min and max distances
+    if(renderMode == ZBUFFER){
         setMinMax(w, h);
     }
+    
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
             Point pixel(x+0.5, h-1-y+0.5, 0);

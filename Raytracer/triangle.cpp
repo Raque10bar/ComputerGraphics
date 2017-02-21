@@ -7,15 +7,16 @@
 Hit Triangle::intersect(const Ray &ray)
 {
     //Calculating Normal of Triangle plane
-    Vector N = (b - a).cross(c - a).normalized();
+    Vector N = (v2 - v1).cross(v3 - v1).normalized();
     
+    //Compute the hit point between the ray and the triangles plane
     double LdotN = ray.D.dot(N);
     
     if (LdotN == 0) {
         return Hit::NO_HIT();
     }
     
-    double t = (a - ray.O).dot(N) / LdotN;
+    double t = (v1 - ray.O).dot(N) / LdotN;
     
     if (t < 0) {
         return Hit::NO_HIT();
@@ -23,13 +24,15 @@ Hit Triangle::intersect(const Ray &ray)
     
     Point intersect = ray.at(t);
     
-    if (! (checkInside(a, b, intersect, N) && (checkInside(b, c, intersect, N)) && (checkInside(c, a, intersect, N)))) {
+    //Check if the intersection point is inside the 3 edges of the triangle
+    if (! (isInside(v1, v2, intersect, N) && (isInside(v2, v3, intersect, N)) && (isInside(v3, v1, intersect, N)))) {
         return Hit::NO_HIT();
     }
     return Hit(t,N);
 }
 
-bool Triangle::checkInside(Point v1, Point v2, Point intersect, Vector N) {
+//Compute the edge that joints the vertices v1 and v2 of the triangle of normal N and check if the itersect point is "inside" it.
+bool Triangle::isInside(Point v1, Point v2, Point intersect, Vector N) {
     Vector edge = v2 - v1;
     Vector interV = intersect - v1;
     Vector C = edge.cross(interV);

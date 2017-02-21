@@ -1,28 +1,13 @@
-//
-//  Framework for a raytracer
-//  File: sphere.cpp
-//
-//  Created for the Computer Science course "Introduction Computer Graphics"
-//  taught at the University of Groningen by Tobias Isenberg.
-//
-//  Authors:
-//    Maarten Everts
-//    Jasper van de Gronde
-//
-//  This framework is inspired by and uses code of the raytracer framework of 
-//  Bert Freudenberg that can be found at
-//  http://isgwww.cs.uni-magdeburg.de/graphik/lehre/cg2/projekt/rtprojekt.html 
-//
 
 #include "plane.h"
 #include <iostream>
 #include <math.h>
 
-/************************** Sphere **********************************/
+/************************** Plane **********************************/
 
 Hit Plane::intersect(const Ray &ray)
 {
-    // place holder for actual intersection calculation
+    //Compute ray-plane intersection
 
     double LdotN = ray.D.dot(N);
     if (LdotN <= 0) {

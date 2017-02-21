@@ -49,6 +49,7 @@ Triple parseTriple(const YAML::Node& node)
     return t;
 }
 
+//Store the render mode of an image. If there is no mode specified, default to Phongs model.
 RenderMode Raytracer::parseRenderMode(const YAML::Node& node)
 {
     RenderMode resultMode = PHONG;
@@ -90,13 +91,11 @@ Object* Raytracer::parseObject(const YAML::Node& node)
         node["radius"] >> r;
         Sphere *sphere = new Sphere(pos,r);		
         returnObject = sphere;
+        
     } else if (objectType == "plane") {
-        
         Plane *plane;
-        
         std::string form;
         node["formula"] >> form;
-        
         if (form == "points") {
             Point p1;
             Point p2;
@@ -105,28 +104,26 @@ Object* Raytracer::parseObject(const YAML::Node& node)
             node["p1"] >> p1;
             node["p2"] >> p2;
             node["p3"] >> p3;
-            
             plane = new Plane(p1, p2, p3);
         } else {
             Point point;
             Vector N;
+            
             node["point"] >> point;
             node["normal"] >> N;
-                
-            plane  = new Plane(point, N);
- 
+            plane = new Plane(point, N);
         }
         returnObject = plane;
         
     } else if(objectType == "triangle") {
-        Point a;
-        Point b;
-        Point c;
+        Point v1;
+        Point v2;
+        Point v3;
         
-        node["a"] >> a;
-        node["b"] >> b;
-        node["c"] >> c;
-        Triangle *triangle = new Triangle(a,b,c);
+        node["v1"] >> v1;
+        node["v2"] >> v2;
+        node["v3"] >> v3;
+        Triangle *triangle = new Triangle(v1,v2,v3);
         returnObject = triangle;
         
     } else if(objectType == "cylinder") {
