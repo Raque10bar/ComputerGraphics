@@ -21,14 +21,17 @@ Hit Cylinder::intersect(const Ray &ray)
 
     double d = b*b - 4*a*c;
     double t = -1;
+    double t2;
+    
     Point intersect;
     
     if (d >= 0) {
-        //Take the smaller t
-        if (a < 0) {
-            t = (-b + sqrt(d))/(2*a);
-        } else {
-            t = (-b - sqrt(d))/(2*a);
+        //Take the smaller t that is greater than 0 (it there is any)
+        t = (-b - sqrt(d))/(2*a);
+        t2 = (-b + sqrt(d))/(2*a);
+        
+        if (t2 < t && t2 >= 0) {
+            t = t2;
         }
         
         //Check if there is an intersection with the body of the cylinder
@@ -98,4 +101,8 @@ bool Cylinder::isInsideBody(Point p1, Point p2, Point intersect) {
 //Check if a point intersect is inside the limits of the circle with center c and radius r
 bool Cylinder::isInsideCap(Point c, Point intersect, double r) {
     return (intersect - c).dot(intersect - c) < r*r;
+}
+
+Point Cylinder::textureCoordinates(Point p) {
+    return p;
 }

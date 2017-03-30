@@ -17,17 +17,29 @@
 
 #include <iostream>
 #include "triple.h"
+#include "image.h"
+#include "object.h"
 
 class Material
 {
 public:
+    static const int DEFAULT_ETA = 0;
+    
     Color color;        // base color
     double ka;          // ambient intensity
     double kd;          // diffuse intensity
     double ks;          // specular intensity 
     double n;           // exponent for specular highlight size
-
+    double eta;         // refraction coefficient
+    Image *texture;     // image with the texture of the material
+    
+    //Reference to the object that has this material
+    Object *object;
+    
     Material() { }
+    
+    //Gets the color of the material at a point
+    Color getColor(Point p);
 };
 
 #endif /* end of include guard: MATERIAL_H_TWMNT2EJ */

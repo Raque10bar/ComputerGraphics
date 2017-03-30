@@ -17,8 +17,69 @@
 #include "sphere.h"
 #include <iostream>
 #include <math.h>
+#include "matrix3.h"
 
 /************************** Sphere **********************************/
+
+Matrix3 * Sphere::computeRotationMatrix3(double r, Vector axis, double angle) {
+    
+    if (angle == 0) {
+        return NULL;
+    }
+    
+    Vector zaxis(0, 0, 1);
+    
+    angle = acos(axis.dot(zaxis));
+    //angle *= M_PI / 180.0;
+    
+    axis = axis.cross(zaxis);
+    if (axis.length() != 0) {
+        axis = axis.normalized();
+    }
+   
+    Matrix3 identity(Vector(1, 0, 0), Vector(0, 1, 0), Vector(0, 0, 1));
+    Matrix3 last(Vector(0, -axis.z, axis.y), Vector(axis.z, 0, -axis.x), Vector(-axis.y, axis.x, 0));
+    
+    Vector mr1(pow(axis.x, 2), axis.x * axis.y, axis.x * axis.z);
+    Vector mr2(axis.y * axis.x, pow(axis.y, 2), axis.y * axis.z);
+    Vector mr3(axis.z * axis.x, axis.z * axis.y, pow(axis.z, 2));
+    Matrix3 middle(mr1, mr2, mr3);
+    
+    Matrix3 aux(identity * cos(angle));
+    Matrix3 aux2(middle * (1 - cos(angle)));
+    Matrix3 aux3(last * sin(angle));
+    
+    return new Matrix3(aux + aux2 + aux3);
+}
+
+Point Sphere::textureCoordinates(Point point) {
+    double u;
+    double v;
+    double theta;
+    double phi;
+    
+    Point p = rotate(point);
+    theta = acos(-(p.z - this->position.z) / this->r);
+    phi = atan2(p.y - this->position.y, p.x - this->position.x);
+    
+    if (phi < 0) {
+        phi += 2 * M_PI;
+    }
+    
+    u = phi / (2 * M_PI);
+    v = (M_PI - theta) / M_PI;
+    
+    return Point(u, v, 0);
+}
+
+Point Sphere::rotate(Point point) {
+    if (rotation == NULL) {
+        return point;
+    }
+   
+    Point rotated = (*rotation) * (point - position);
+    return rotated + position;
+}
 
 Hit Sphere::intersect(const Ray &ray)
 {
@@ -48,7 +109,13 @@ Hit Sphere::intersect(const Ray &ray)
         return Hit::NO_HIT();
     }
     
+    //Take the smaller t that is greater than 0 (it there is any)
     double t = (-b - sqrt(d))/2;
+    double t2 = (-b + sqrt(d))/2;
+    
+    if (t2 < t && t2 >= 0) {
+        t = t2;
+    }
     
     if (t < 0) {
         return Hit::NO_HIT();

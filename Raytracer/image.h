@@ -27,6 +27,10 @@ protected:
     int _height;
 
 public:
+    //Image defaults
+    static const unsigned int DEFAULT_IMG_WIDTH = 400;
+    static const unsigned int DEFAULT_IMG_HEIGHT = 400;
+    
     Image(int width=0, int height=0)
         : _pixel(0), _width(0), _height(0)
     {
@@ -36,10 +40,9 @@ public:
     Image(const char *imageFilename)
         : _pixel(0), _width(0), _height(0)
     {
+        cout << imageFilename << endl;
         read_png(imageFilename);
     }
-
-
 
     ~Image()
     {

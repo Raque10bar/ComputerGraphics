@@ -18,6 +18,7 @@
 #include "plane.h"
 #include "triangle.h"
 #include "cylinder.h"
+#include "camera.h"
 #include "material.h"
 #include "light.h"
 #include "image.h"
@@ -25,12 +26,18 @@
 #include <ctype.h>
 #include <fstream>
 #include <assert.h>
-#include "renderMode.h"
 #include <string.h>
+#include "tetrahedron.h"
+#include "sierpinski.h"
+#include "glm.h"
+#include "model.h"
 
 // Functions to ease reading from YAML input
 void operator >> (const YAML::Node& node, Triple& t);
 Triple parseTriple(const YAML::Node& node);
+
+//Map initialization
+Raytracer::ObjectMap Raytracer::mapStringToObject = Raytracer::initObjectMap();
 
 void operator >> (const YAML::Node& node, Triple& t)
 {
@@ -49,99 +56,293 @@ Triple parseTriple(const YAML::Node& node)
     return t;
 }
 
-//Store the render mode of an image. If there is no mode specified, default to Phongs model.
-RenderMode Raytracer::parseRenderMode(const YAML::Node& node)
+Camera* Raytracer::parseCamera(const YAML::Node& node)
 {
-    RenderMode resultMode = PHONG;
+    Camera *c = new Camera();
+    node["eye"] >> c->eye;
+    node["center"] >> c->center;
+    node["up"] >> c->up;
+    node["viewSize"][0] >> c->width;
+    node["viewSize"][1] >> c->height;
+    c->setPixelSize();
+    
+    return c;
+}
+
+Gooch* Raytracer::parseGooch(const YAML::Node& node)
+{
+    double b;
+    double y;
+    double alpha;
+    double beta;
+    double edge;
+    
+    const YAML :: Node * params = node.FindValue("GoochParameters");
+    (*params)["b"] >> b;
+    (*params)["y"] >> y;
+    (*params)["alpha"] >> alpha;
+    (*params)["beta"] >> beta;
+    
+    if( const YAML :: Node * edges = (*params).FindValue("edge")) {
+        (*edges) >> edge;
+    } else {
+        edge = Gooch::DEFAULT_EDGE;
+    }
+    
+    return new Gooch(b, y, alpha, beta, edge);
+}
+
+Scene::CameraModels Raytracer::parseCameraModel(const YAML::Node& node) {
+    Scene::CameraModels mode;
+    
+    if( node.FindValue("Camera")) {
+        mode = Scene::EXTENDED; //Extended camera
+    } else {
+        mode = Scene::DEFAULT_CAMERA_MODEL; //Eye
+    }
+    
+    return mode;
+}
+
+int Raytracer::parseNumSamples(const YAML::Node& node) {
+    int sampleNum;
+    
+    if( const YAML :: Node * sample = node.FindValue("SuperSampling")) {
+        (*sample)["factor"] >> sampleNum;
+    } else {
+        sampleNum = Scene::DEFAULT_SAMPLES;
+    }
+    
+    return sampleNum;
+}
+
+int Raytracer::parseReflectionDepth(const YAML::Node& node) {
+    int depthNum;
+    
+    if( const YAML :: Node * depth = node.FindValue("MaxRecursionDepth")) {
+        *depth >> depthNum;
+    } else {
+        depthNum = Scene::DEFAULT_REFLECTION_DEPTH;
+    }
+    return depthNum;
+}
+
+double Raytracer::parseRefract(const YAML::Node& node) {
+    double refract;
+    
+    if( const YAML :: Node * ref = node.FindValue("refrct")) {
+        *ref >> refract;
+    } else {
+        refract = Scene::DEFAULT_REFRACTION_DEPTH;
+    }
+    return refract;
+}
+
+int Raytracer::parseRefractionDepth(const YAML::Node& node) {
+    int depthNum;
+    
+    if( const YAML :: Node * depth = node.FindValue("MaxRefractionDepth")) {
+        *depth >> depthNum;
+    } else {
+        depthNum = Scene::DEFAULT_REFRACTION_DEPTH;
+    }
+    return depthNum;
+}
+
+//Store the render mode of an image. If there is no mode specified, default to Phongs model.
+Scene::RenderModes Raytracer::parseRenderMode(const YAML::Node& node)
+{
+    Scene::RenderModes resultMode;
     
     if( const YAML :: Node * render = node.FindValue("RenderMode")) {
         std::string mode;
         *render >> mode;
+        resultMode = Scene::mapStringToRender[mode];
         
-        if (mode == "normal") {
-            resultMode = NORMAL;
-        } else if (mode == "zbuffer") {
-            resultMode = ZBUFFER;
-        }
+    } else {
+        resultMode = Scene::DEFAULT_RENDER_MODE;
     }
+    
     return resultMode;
 }
 
 Material* Raytracer::parseMaterial(const YAML::Node& node)
 {
     Material *m = new Material();
-    node["color"] >> m->color;	
+    
+    //Parse material texture or color
+    if(const YAML :: Node * texture = node.FindValue("texture")) {
+        std::string text;
+        *texture >> text;
+        const char * c = text.c_str();
+        m->texture = new Image(c);
+    } else {
+        node["color"] >> m->color;
+        m->texture = NULL;
+    }
+    
     node["ka"] >> m->ka;
     node["kd"] >> m->kd;
     node["ks"] >> m->ks;
     node["n"] >> m->n;
+    
+    //Parse refraction coefficient
+    if( const YAML :: Node * eta = node.FindValue("eta")) {
+        *eta >> m->eta;
+    } else {
+        m->eta = Material::DEFAULT_ETA;
+    }
     return m;
+}
+
+Sphere* Raytracer::parseSphere(const YAML::Node& node) {
+    Sphere *sphere;
+    Point pos;
+    double r;
+    
+    node["position"] >> pos;
+    
+    if (node["radius"].size() == 2) {
+        Vector axis;
+        double angle;
+        
+        node["radius"][0] >> r;
+        node["radius"][1] >> axis;
+        node["angle"] >> angle;
+        
+        sphere = new Sphere(pos, r, axis, angle);
+    } else {
+        node["radius"] >> r;
+        sphere = new Sphere(pos, r);
+    }
+    
+    return sphere;
+}
+
+Plane* Raytracer::parsePlane(const YAML::Node& node) {
+    Plane *plane;
+    std::string form;
+    node["formula"] >> form;
+    if (form == "points") {
+        Point p1;
+        Point p2;
+        Point p3;
+        
+        node["p1"] >> p1;
+        node["p2"] >> p2;
+        node["p3"] >> p3;
+        plane = new Plane(p1, p2, p3);
+    } else {
+        Point point;
+        Vector N;
+        
+        node["point"] >> point;
+        node["normal"] >> N;
+        plane = new Plane(point, N);
+    }
+    
+    return plane;
+}
+
+Triangle* Raytracer::parseTriangle(const YAML::Node& node) {
+    Point v1;
+    Point v2;
+    Point v3;
+    
+    node["v1"] >> v1;
+    node["v2"] >> v2;
+    node["v3"] >> v3;
+    return new Triangle(v1,v2,v3);
+}
+
+Cylinder* Raytracer::parseCylinder(const YAML::Node& node) {
+    Point p1;
+    Point p2;
+    double r;
+    
+    node["p1"] >> p1;
+    node["p2"] >> p2;
+    node["r"] >> r;
+    return new Cylinder(p1,p2,r);
+}
+
+Tetrahedron* Raytracer::parseTetrahedron(const YAML::Node& node) {
+    Point center;
+    double side;
+    node["center"] >> center;
+    node["side"] >> side;
+    return new Tetrahedron(center, side);
+}
+
+Sierpinski* Raytracer::parseSierpinski(const YAML::Node& node) {
+    Point center;
+    double side;
+    int recursions;
+    
+    node["center"] >> center;
+    node["side"] >> side;
+    node["recursions"] >> recursions;
+    return new Sierpinski(center, side, recursions);
+}
+
+Model* Raytracer::parseModel(const YAML::Node& node) {
+    
+    std::string text;
+    Point pos;
+    double scale;
+    
+    node["file"] >> text;
+    node["position"] >> pos;
+    node["scale"] >> scale;
+   
+    const char* c = text.c_str();
+    GLMmodel *model = glmReadOBJ(c);
+    
+    float* vertices = model->vertices;
+    GLMtriangle* triangles = model->triangles;
+    unsigned int numTriangles = model->numtriangles;
+    
+    glmDelete(model);
+    
+    return new Model(numTriangles, triangles, vertices, pos, scale);
 }
 
 Object* Raytracer::parseObject(const YAML::Node& node)
 {
     Object *returnObject = NULL;
-    std::string objectType;
-    node["type"] >> objectType;
+    std::string objectSt;
+    node["type"] >> objectSt;
 
-    if (objectType == "sphere") {
-        Point pos;
-        node["position"] >> pos;
-        double r;
-        node["radius"] >> r;
-        Sphere *sphere = new Sphere(pos,r);		
-        returnObject = sphere;
-        
-    } else if (objectType == "plane") {
-        Plane *plane;
-        std::string form;
-        node["formula"] >> form;
-        if (form == "points") {
-            Point p1;
-            Point p2;
-            Point p3;
-            
-            node["p1"] >> p1;
-            node["p2"] >> p2;
-            node["p3"] >> p3;
-            plane = new Plane(p1, p2, p3);
-        } else {
-            Point point;
-            Vector N;
-            
-            node["point"] >> point;
-            node["normal"] >> N;
-            plane = new Plane(point, N);
-        }
-        returnObject = plane;
-        
-    } else if(objectType == "triangle") {
-        Point v1;
-        Point v2;
-        Point v3;
-        
-        node["v1"] >> v1;
-        node["v2"] >> v2;
-        node["v3"] >> v3;
-        Triangle *triangle = new Triangle(v1,v2,v3);
-        returnObject = triangle;
-        
-    } else if(objectType == "cylinder") {
-        Point p1;
-        Point p2;
-        double r;
-        
-        node["p1"] >> p1;
-        node["p2"] >> p2;
-        node["r"] >> r;
-        Cylinder *cylinder = new Cylinder(p1,p2,r);
-        returnObject = cylinder;
+    switch (mapStringToObject[objectSt]) {
+        case SPHERE:
+            returnObject = parseSphere(node);
+            break;
+        case PLANE:
+            returnObject = parsePlane(node);
+            break;
+        case TRIANGLE:
+            returnObject = parseTriangle(node);
+            break;
+        case CYLINDER:
+            returnObject = parseCylinder(node);
+            break;
+        case TETRAHEDRON:
+            returnObject = parseTetrahedron(node);
+            break;
+        case SIERPINSKI:
+            returnObject = parseSierpinski(node);
+            break;
+        case MODEL:
+            returnObject = parseModel(node);
+            break;
+        default:
+            cout << "Shape type " << objectSt << " not recognized." << endl;
     }
-
 
     if (returnObject) {
         // read the material and attach to object
         returnObject->material = parseMaterial(node["material"]);
+        returnObject->material->object = returnObject;
     }
 
     return returnObject;
@@ -154,6 +355,17 @@ Light* Raytracer::parseLight(const YAML::Node& node)
     Color color;
     node["color"] >> color;
     return new Light(position,color);
+}
+
+bool Raytracer::parseShadows(const YAML::Node& node) {
+    bool result;
+    
+    if( const YAML :: Node * shadows = node.FindValue("Shadows")) {
+        *shadows >> result;
+    } else {
+        result = Scene::DEFAULT_SHADOWS;
+    }
+    return result;
 }
 
 /*
@@ -176,9 +388,6 @@ bool Raytracer::readScene(const std::string& inputFilename)
         if (parser) {
             YAML::Node doc;
             parser.GetNextDocument(doc);
-
-            // Read scene configuration options
-            scene->setEye(parseTriple(doc["Eye"]));
 
             // Read and parse the scene objects
             const YAML::Node& sceneObjects = doc["Objects"];
@@ -207,8 +416,28 @@ bool Raytracer::readScene(const std::string& inputFilename)
                 scene->addLight(parseLight(*it));
             }
             
-            //Read and parse the render mode
-            scene->setRenderMode(parseRenderMode(doc));
+            // Read scene configuration options
+            Scene::RenderModes rm = parseRenderMode(doc);
+            scene->setRenderMode(rm);
+            
+            scene->setShadows(parseShadows(doc));
+            scene->setReflectionDepth(parseReflectionDepth(doc));
+            scene->setRefract(parseRefract(doc));
+            scene->setRefractionDepth(parseRefractionDepth(doc));
+            scene->setNumSamples(parseNumSamples(doc));
+            
+            //Read and parse the camera model
+            if (parseCameraModel(doc) == Scene::EYE) {
+                scene->setCameraModel(Scene::EYE);
+                scene->setEye(parseTriple(doc["Eye"]));
+            } else {
+                scene->setCameraModel(Scene::EXTENDED);
+                scene->setCamera(parseCamera(doc["Camera"]));
+            }
+            
+            if (rm == Scene::GOOCH) {
+                scene->setGooch(parseGooch(doc));
+            }
         }
         if (parser) {
             cerr << "Warning: unexpected YAML document, ignored." << endl;
@@ -224,10 +453,25 @@ bool Raytracer::readScene(const std::string& inputFilename)
 
 void Raytracer::renderToFile(const std::string& outputFilename)
 {
-    Image img(400,400);
+    
     cout << "Tracing..." << endl;
-    scene->render(img);
+    //The image is created in scene to be able to configure its width and height properly
+    Image img = scene->render();
     cout << "Writing image to " << outputFilename << "..." << endl;
     img.write_png(outputFilename.c_str());
     cout << "Done." << endl;
+}
+
+//Map initialization
+Raytracer::ObjectMap Raytracer::initObjectMap() {
+    Raytracer::ObjectMap map;
+    
+    map["sphere"] = SPHERE;
+    map["plane"] = PLANE;
+    map["triangle"] = TRIANGLE;
+    map["cylinder"] = CYLINDER;
+    map["tetrahedron"] = TETRAHEDRON;
+    map["sierpinski"] = SIERPINSKI;
+    map["model"] = MODEL;
+    return map;
 }
